@@ -1,6 +1,7 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
+import { Moon, Sun } from "lucide-react";
 
 const THEME_KEY = "smart-csv-importer-theme";
 
@@ -32,9 +33,9 @@ export default function ThemeToggle() {
       onClick={() => setTheme(!isDark)}
       aria-label="Toggle dark mode"
       suppressHydrationWarning
-      className="flex h-9 w-9 items-center justify-center rounded-full border border-black/10 text-lg transition-colors hover:bg-black/5 dark:border-white/15 dark:hover:bg-white/10"
+      className="flex h-9 w-9 items-center justify-center rounded-full border border-black/10 text-slate-600 transition-all hover:scale-105 hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-600 active:scale-95 dark:border-white/15 dark:text-slate-300 dark:hover:border-indigo-400/40 dark:hover:bg-indigo-500/10 dark:hover:text-indigo-300"
     >
-      {isDark ? "☀️" : "🌙"}
+      {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
     </button>
   );
 }

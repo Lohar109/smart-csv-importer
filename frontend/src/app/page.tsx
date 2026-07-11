@@ -5,16 +5,16 @@ import UploadStep from "@/components/UploadStep";
 import DataTable from "@/components/DataTable";
 import ResultsView from "@/components/ResultsView";
 import Spinner from "@/components/Spinner";
-import ThemeToggle from "@/components/ThemeToggle";
+import Stepper from "@/components/Stepper";
 import { apiClient, extractErrorMessage } from "@/lib/api";
 import type { CsvRow, ExtractResponse } from "@/types/crm";
 
 type WizardStep = "upload" | "preview" | "results";
 
-const STEP_LABELS: { key: WizardStep; label: string }[] = [
-  { key: "upload", label: "1. Upload" },
-  { key: "preview", label: "2. Preview" },
-  { key: "results", label: "3. Results" },
+const STEPS: { key: WizardStep; label: string }[] = [
+  { key: "upload", label: "Upload" },
+  { key: "preview", label: "Preview" },
+  { key: "results", label: "Results" },
 ];
 
 export default function Home() {
@@ -50,31 +50,17 @@ export default function Home() {
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-6 py-10">
-      <header className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold">Smart CSV Importer</h1>
-          <p className="text-sm text-black/60 dark:text-white/60">
-            AI-powered CRM lead extraction from any CSV format
-          </p>
-        </div>
-        <ThemeToggle />
-      </header>
+    <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-8 px-6 py-10">
+      <div>
+        <h1 className="text-2xl font-semibold tracking-tight text-slate-900 dark:text-white">
+          Smart CSV Importer
+        </h1>
+        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+          AI-powered CRM lead extraction from any CSV format
+        </p>
+      </div>
 
-      <nav className="flex gap-4 text-sm">
-        {STEP_LABELS.map((s) => (
-          <span
-            key={s.key}
-            className={`rounded-full px-3 py-1 ${
-              s.key === step
-                ? "bg-blue-600 text-white"
-                : "bg-black/5 text-black/50 dark:bg-white/10 dark:text-white/50"
-            }`}
-          >
-            {s.label}
-          </span>
-        ))}
-      </nav>
+      <Stepper steps={STEPS} currentKey={step} />
 
       {error && (
         <div className="rounded-lg border border-red-500/30 bg-red-50 px-4 py-3 text-sm text-red-700 dark:bg-red-950/30 dark:text-red-400">
@@ -83,20 +69,22 @@ export default function Home() {
       )}
 
       {step === "upload" && (
-        <UploadStep
-          onParsed={({ fileName, headers, rows }) => {
-            setFileName(fileName);
-            setHeaders(headers);
-            setRows(rows);
-            setError("");
-            setStep("preview");
-          }}
-          onError={setError}
-        />
+        <div key="upload" className="animate-step-in">
+          <UploadStep
+            onParsed={({ fileName, headers, rows }) => {
+              setFileName(fileName);
+              setHeaders(headers);
+              setRows(rows);
+              setError("");
+              setStep("preview");
+            }}
+            onError={setError}
+          />
+        </div>
       )}
 
       {step === "preview" && (
-        <div className="flex flex-col gap-4">
+        <div key="preview" className="flex animate-step-in flex-col gap-4">
           <div className="flex items-center justify-between">
             <p className="text-sm text-black/60 dark:text-white/60">
               <span className="font-medium text-black dark:text-white">{fileName}</span> —{" "}
@@ -128,7 +116,7 @@ export default function Home() {
       )}
 
       {step === "results" && result && (
-        <div className="flex flex-col gap-4">
+        <div key="results" className="flex animate-step-in flex-col gap-4">
           <div className="flex items-center justify-between">
             <p className="text-sm text-black/60 dark:text-white/60">
               Import complete for <span className="font-medium text-black dark:text-white">{fileName}</span>
