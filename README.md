@@ -6,7 +6,7 @@ An AI-powered CSV importer that turns **any** CSV layout — Facebook Lead Ads e
 
 ## Live Demo
 
-- Frontend (Vercel): _TODO — add URL after deploying_
+- Frontend (Vercel): [_TODO — add URL after deploying_](https://smart-csv-importer-seven.vercel.app/)
 - Backend API (Render): _TODO — add URL after deploying_
 - GitHub repo: https://github.com/Lohar109/smart-csv-importer
 
