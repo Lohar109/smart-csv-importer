@@ -126,16 +126,18 @@ export default function Home() {
       )}
 
       {step === "results" && result && (
-        <div key="results" className="flex animate-step-in flex-col gap-4">
-          <div className="flex items-center justify-between">
-            <p className="text-sm text-black/60 dark:text-white/60">
-              Import complete for <span className="font-medium text-black dark:text-white">{fileName}</span>
+        <div key="results" className="flex animate-step-in flex-col gap-5">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="text-sm text-slate-500 dark:text-slate-400">
+              Import complete for{" "}
+              <span className="font-medium text-slate-900 dark:text-white">{fileName}</span>
             </p>
             <button
               type="button"
               onClick={reset}
-              className="rounded-full border border-black/15 px-4 py-1.5 text-sm hover:bg-black/5 dark:border-white/20 dark:hover:bg-white/10"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3.5 py-1.5 text-sm font-medium text-slate-600 transition-colors hover:border-slate-300 hover:bg-slate-50 dark:border-white/15 dark:text-slate-300 dark:hover:bg-white/5"
             >
+              <RotateCcw className="h-3.5 w-3.5" />
               Import another file
             </button>
           </div>

@@ -1,10 +1,18 @@
+import type { ReactNode } from "react";
+
 interface DataTableProps {
   columns: string[];
   rows: Record<string, string>[];
   maxHeightClass?: string;
+  renderCell?: (column: string, value: string, row: Record<string, string>) => ReactNode;
 }
 
-export default function DataTable({ columns, rows, maxHeightClass = "max-h-[28rem]" }: DataTableProps) {
+export default function DataTable({
+  columns,
+  rows,
+  maxHeightClass = "max-h-[28rem]",
+  renderCell,
+}: DataTableProps) {
   return (
     <div className="relative">
       <div
@@ -29,15 +37,18 @@ export default function DataTable({ columns, rows, maxHeightClass = "max-h-[28re
                 key={idx}
                 className="odd:bg-transparent even:bg-slate-50/60 hover:bg-indigo-50/50 dark:even:bg-white/[.03] dark:hover:bg-indigo-500/[.06]"
               >
-                {columns.map((col) => (
-                  <td
-                    key={col}
-                    title={row[col] ?? ""}
-                    className="max-w-[220px] truncate border-b border-slate-100 px-4 py-2.5 text-slate-700 dark:border-white/5 dark:text-slate-300"
-                  >
-                    {row[col] ?? ""}
-                  </td>
-                ))}
+                {columns.map((col) => {
+                  const value = row[col] ?? "";
+                  return (
+                    <td
+                      key={col}
+                      title={renderCell ? undefined : value}
+                      className="max-w-[220px] truncate border-b border-slate-100 px-4 py-2.5 text-slate-700 dark:border-white/5 dark:text-slate-300"
+                    >
+                      {renderCell ? renderCell(col, value, row) : value}
+                    </td>
+                  );
+                })}
               </tr>
             ))}
           </tbody>
