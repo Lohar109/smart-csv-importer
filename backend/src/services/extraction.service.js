@@ -1,6 +1,7 @@
 const { getLlmProvider } = require('./llm/llmProviderFactory');
 const { buildExtractionPrompt } = require('./promptBuilder');
 const { parseExtractionResponse } = require('./responseParser');
+const { markDuplicates } = require('./dedupe.service');
 
 const BATCH_SIZE = 20;
 const MAX_RETRIES = 2;
@@ -61,11 +62,15 @@ async function extractCrmRecords(rows) {
     skipped.push(...result.skipped);
   }
 
+  const dedupedImported = markDuplicates(imported);
+  const duplicateCount = dedupedImported.filter((record) => record.is_duplicate).length;
+
   return {
-    imported,
+    imported: dedupedImported,
     skipped,
-    totalImported: imported.length,
+    totalImported: dedupedImported.length,
     totalSkipped: skipped.length,
+    duplicateCount,
   };
 }
 
