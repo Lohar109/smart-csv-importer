@@ -1,5 +1,6 @@
 import { Sparkles } from "lucide-react";
 import ThemeToggle from "./ThemeToggle";
+import AppGuideButton from "./AppGuideButton";
 
 export default function Navbar() {
   return (
@@ -13,7 +14,10 @@ export default function Navbar() {
             Smart CSV Importer
           </span>
         </div>
-        <ThemeToggle />
+        <div className="flex items-center gap-2">
+          <AppGuideButton />
+          <ThemeToggle />
+        </div>
       </div>
     </header>
   );
