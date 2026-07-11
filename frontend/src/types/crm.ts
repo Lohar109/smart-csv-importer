@@ -77,6 +77,8 @@ export interface CrmRecord {
   possession_time: string;
   description: string;
   field_confidence?: FieldConfidence;
+  is_duplicate?: boolean;
+  duplicate_of?: number | null;
 }
 
 export interface SkippedRecord {
@@ -89,6 +91,7 @@ export interface ExtractResponse {
   skipped: SkippedRecord[];
   totalImported: number;
   totalSkipped: number;
+  duplicateCount?: number;
 }
 
 export const CRM_COLUMNS: CrmFieldKey[] = [

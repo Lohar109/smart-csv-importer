@@ -1,6 +1,6 @@
 import type { LucideIcon } from "lucide-react";
 
-type StatVariant = "success" | "warning";
+type StatVariant = "success" | "warning" | "info";
 
 const VARIANT_STYLES: Record<StatVariant, { border: string; bg: string; icon: string; text: string }> = {
   success: {
@@ -14,6 +14,12 @@ const VARIANT_STYLES: Record<StatVariant, { border: string; bg: string; icon: st
     bg: "bg-amber-50/70 dark:bg-amber-500/10",
     icon: "bg-amber-100 text-amber-600 dark:bg-amber-500/15 dark:text-amber-400",
     text: "text-amber-700 dark:text-amber-400",
+  },
+  info: {
+    border: "border-l-purple-500",
+    bg: "bg-purple-50/70 dark:bg-purple-500/10",
+    icon: "bg-purple-100 text-purple-600 dark:bg-purple-500/15 dark:text-purple-300",
+    text: "text-purple-700 dark:text-purple-300",
   },
 };
 

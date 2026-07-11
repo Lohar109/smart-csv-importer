@@ -1,12 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { CheckCircle2, ClipboardCopy, Download, PartyPopper, AlertTriangle } from "lucide-react";
+import { CheckCircle2, ClipboardCopy, Copy, Download, PartyPopper, AlertTriangle } from "lucide-react";
 import { CRM_COLUMNS, type ExtractResponse } from "@/types/crm";
 import DataTable from "./DataTable";
 import Card from "./Card";
 import StatCard from "./StatCard";
-import { StatusBadge, DataSourceBadge, ReasonTag } from "./Badge";
+import { StatusBadge, DataSourceBadge, ReasonTag, DuplicateTag } from "./Badge";
 
 function toCsvValue(value: string) {
   if (/[",\n]/.test(value)) {
@@ -40,6 +40,7 @@ function EmptyState({ icon: Icon, message }: { icon: typeof PartyPopper; message
 
 export default function ResultsView({ result }: { result: ExtractResponse }) {
   const [copied, setCopied] = useState(false);
+  const duplicateCount = result.duplicateCount ?? 0;
   const skippedRows = result.skipped.map((s) => ({ ...s.row, "Skip Reason": s.reason }));
   const skippedColumns =
     skippedRows.length > 0
@@ -47,6 +48,10 @@ export default function ResultsView({ result }: { result: ExtractResponse }) {
           new Set(skippedRows.flatMap((r) => Object.keys(r).filter((k) => k !== "Skip Reason"))),
         )
       : [];
+  const importedRows = result.imported.map((record) => ({
+    ...record,
+    Duplicate: record.is_duplicate ? "yes" : "",
+  }));
 
   async function handleCopyJson() {
     await navigator.clipboard.writeText(JSON.stringify(result, null, 2));
@@ -64,9 +69,14 @@ export default function ResultsView({ result }: { result: ExtractResponse }) {
 
   return (
     <div className="flex w-full flex-col gap-8">
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      <div
+        className={`grid grid-cols-1 gap-4 sm:grid-cols-2 ${duplicateCount > 0 ? "lg:grid-cols-3" : ""}`}
+      >
         <StatCard icon={CheckCircle2} label="Imported" value={result.totalImported} variant="success" />
         <StatCard icon={AlertTriangle} label="Skipped" value={result.totalSkipped} variant="warning" />
+        {duplicateCount > 0 && (
+          <StatCard icon={Copy} label="Duplicates Found" value={duplicateCount} variant="info" />
+        )}
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -95,11 +105,18 @@ export default function ResultsView({ result }: { result: ExtractResponse }) {
       </div>
 
       <Card>
-        {result.imported.length > 0 ? (
+        {importedRows.length > 0 ? (
           <DataTable
-            columns={CRM_COLUMNS as string[]}
-            rows={result.imported as unknown as Record<string, string>[]}
-            renderCell={(col, value) => {
+            columns={["Duplicate", ...CRM_COLUMNS] as string[]}
+            rows={importedRows as unknown as Record<string, string>[]}
+            renderCell={(col, value, row) => {
+              if (col === "Duplicate") {
+                return value === "yes" ? (
+                  <DuplicateTag duplicateOf={(row as unknown as { duplicate_of: number | null }).duplicate_of} />
+                ) : (
+                  <span className="text-slate-300 dark:text-slate-600">—</span>
+                );
+              }
               if (col === "crm_status") return <StatusBadge value={value} />;
               if (col === "data_source") return <DataSourceBadge value={value} />;
               return value;

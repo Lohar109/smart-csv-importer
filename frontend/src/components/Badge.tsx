@@ -12,6 +12,9 @@ const DATA_SOURCE_CLASS =
 const NEUTRAL_TAG_CLASS =
   "bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400";
 
+const DUPLICATE_TAG_CLASS =
+  "bg-purple-100 text-purple-700 dark:bg-purple-500/15 dark:text-purple-300";
+
 function formatLabel(value: string) {
   return value
     .toLowerCase()
@@ -43,4 +46,12 @@ export function DataSourceBadge({ value }: { value: string }) {
 
 export function ReasonTag({ value }: { value: string }) {
   return <Pill className={NEUTRAL_TAG_CLASS}>{value}</Pill>;
+}
+
+export function DuplicateTag({ duplicateOf }: { duplicateOf: number | null | undefined }) {
+  return (
+    <Pill className={DUPLICATE_TAG_CLASS}>
+      {typeof duplicateOf === "number" ? `Duplicate of #${duplicateOf + 1}` : "Duplicate"}
+    </Pill>
+  );
 }
