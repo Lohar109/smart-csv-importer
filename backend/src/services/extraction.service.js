@@ -48,12 +48,35 @@ async function extractBatchWithRetry(batch, provider) {
 /**
  * Splits rows into batches, runs each through the LLM extraction prompt
  * (with retry on failure), and combines the results.
+ *
+ * If `onBatchComplete` is provided, it is called once per batch as soon as
+ * that batch settles (in completion order, not necessarily input order)
+ * with { batchIndex, totalBatches, recordsProcessedSoFar } — used to drive
+ * live progress updates over SSE without changing the non-streaming caller.
  */
-async function extractCrmRecords(rows) {
+async function extractCrmRecords(rows, { onBatchComplete } = {}) {
   const provider = getLlmProvider();
   const batches = chunkRows(rows, BATCH_SIZE);
+  const totalBatches = batches.length;
 
-  const results = await Promise.all(batches.map((batch) => extractBatchWithRetry(batch, provider)));
+  let completedBatches = 0;
+  let recordsProcessedSoFar = 0;
+
+  const results = await Promise.all(
+    batches.map(async (batch) => {
+      const result = await extractBatchWithRetry(batch, provider);
+      completedBatches += 1;
+      recordsProcessedSoFar += result.imported.length + result.skipped.length;
+      if (onBatchComplete) {
+        onBatchComplete({
+          batchIndex: completedBatches,
+          totalBatches,
+          recordsProcessedSoFar,
+        });
+      }
+      return result;
+    }),
+  );
 
   const imported = [];
   const skipped = [];
