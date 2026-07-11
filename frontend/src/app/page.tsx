@@ -6,6 +6,7 @@ import DataTable from "@/components/DataTable";
 import ResultsView from "@/components/ResultsView";
 import Spinner from "@/components/Spinner";
 import Stepper from "@/components/Stepper";
+import Alert from "@/components/Alert";
 import { apiClient, extractErrorMessage } from "@/lib/api";
 import type { CsvRow, ExtractResponse } from "@/types/crm";
 
@@ -62,11 +63,7 @@ export default function Home() {
 
       <Stepper steps={STEPS} currentKey={step} />
 
-      {error && (
-        <div className="rounded-lg border border-red-500/30 bg-red-50 px-4 py-3 text-sm text-red-700 dark:bg-red-950/30 dark:text-red-400">
-          {error}
-        </div>
-      )}
+      {error && <Alert message={error} onDismiss={() => setError("")} />}
 
       {step === "upload" && (
         <div key="upload" className="animate-step-in">
