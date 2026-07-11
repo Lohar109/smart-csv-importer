@@ -26,4 +26,6 @@ const DATA_SOURCE_VALUES = [
   'sarjapur_plots',
 ];
 
-module.exports = { CRM_FIELDS, CRM_STATUS_VALUES, DATA_SOURCE_VALUES };
+const CONFIDENCE_LEVELS = ['high', 'medium', 'low'];
+
+module.exports = { CRM_FIELDS, CRM_STATUS_VALUES, DATA_SOURCE_VALUES, CONFIDENCE_LEVELS };

@@ -1,4 +1,4 @@
-const { CRM_FIELDS, CRM_STATUS_VALUES, DATA_SOURCE_VALUES } = require('../utils/crmSchema');
+const { CRM_FIELDS, CRM_STATUS_VALUES, DATA_SOURCE_VALUES, CONFIDENCE_LEVELS } = require('../utils/crmSchema');
 
 function extractJsonBlock(text) {
   const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
@@ -9,6 +9,16 @@ function extractJsonBlock(text) {
   if (firstBrace === -1 || lastBrace === -1) return text.trim();
 
   return text.slice(firstBrace, lastBrace + 1);
+}
+
+function normalizeFieldConfidence(rawConfidence) {
+  const confidence = {};
+  const source = rawConfidence && typeof rawConfidence === 'object' ? rawConfidence : {};
+  for (const field of CRM_FIELDS) {
+    const level = source[field];
+    confidence[field] = CONFIDENCE_LEVELS.includes(level) ? level : 'high';
+  }
+  return confidence;
 }
 
 function normalizeRecord(record) {
@@ -24,6 +34,8 @@ function normalizeRecord(record) {
   if (!DATA_SOURCE_VALUES.includes(normalized.data_source)) {
     normalized.data_source = '';
   }
+
+  normalized.field_confidence = normalizeFieldConfidence(record.field_confidence);
 
   return normalized;
 }
