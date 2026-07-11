@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: smart-csv-importer-backend
+    runtime: node
+    rootDir: backend
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GEMINI_MODEL
+        value: gemini-flash-latest
+      - key: CORS_ORIGIN
+        sync: false
+      - key: PORT
+        value: 5000
