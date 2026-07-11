@@ -5,18 +5,20 @@ import { ArrowRight, FileText, RotateCcw } from "lucide-react";
 import UploadStep from "@/components/UploadStep";
 import DataTable from "@/components/DataTable";
 import ResultsView from "@/components/ResultsView";
+import ReviewStep from "@/components/ReviewStep";
 import ProcessingScreen from "@/components/ProcessingScreen";
 import Stepper from "@/components/Stepper";
 import Alert from "@/components/Alert";
 import Card from "@/components/Card";
 import { apiClient, extractErrorMessage } from "@/lib/api";
-import type { CsvRow, ExtractResponse } from "@/types/crm";
+import type { CrmFieldKey, CrmRecord, CsvRow, ExtractResponse } from "@/types/crm";
 
-type WizardStep = "upload" | "preview" | "results";
+type WizardStep = "upload" | "preview" | "review" | "results";
 
 const STEPS: { key: WizardStep; label: string }[] = [
   { key: "upload", label: "Upload" },
   { key: "preview", label: "Preview" },
+  { key: "review", label: "Review" },
   { key: "results", label: "Results" },
 ];
 
@@ -26,6 +28,7 @@ export default function Home() {
   const [headers, setHeaders] = useState<string[]>([]);
   const [rows, setRows] = useState<CsvRow[]>([]);
   const [result, setResult] = useState<ExtractResponse | null>(null);
+  const [reviewRecords, setReviewRecords] = useState<CrmRecord[]>([]);
   const [isImporting, setIsImporting] = useState(false);
   const [error, setError] = useState("");
 
@@ -35,6 +38,7 @@ export default function Home() {
     setHeaders([]);
     setRows([]);
     setResult(null);
+    setReviewRecords([]);
     setError("");
   }
 
@@ -44,12 +48,25 @@ export default function Home() {
     try {
       const { data } = await apiClient.post<ExtractResponse>("/api/extract", { rows });
       setResult(data);
-      setStep("results");
+      setReviewRecords(data.imported);
+      setStep("review");
     } catch (err) {
       setError(extractErrorMessage(err, "Failed to extract CRM records. Please try again."));
     } finally {
       setIsImporting(false);
     }
+  }
+
+  function handleReviewFieldChange(recordIndex: number, field: CrmFieldKey, value: string) {
+    setReviewRecords((prev) =>
+      prev.map((record, idx) => (idx === recordIndex ? { ...record, [field]: value } : record)),
+    );
+  }
+
+  function handleConfirmReview() {
+    if (!result) return;
+    setResult({ ...result, imported: reviewRecords });
+    setStep("results");
   }
 
   return (
@@ -122,6 +139,16 @@ export default function Home() {
             Confirm Import
             <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
           </button>
+        </div>
+      )}
+
+      {step === "review" && (
+        <div key="review" className="animate-step-in">
+          <ReviewStep
+            records={reviewRecords}
+            onFieldChange={handleReviewFieldChange}
+            onConfirm={handleConfirmReview}
+          />
         </div>
       )}
 
