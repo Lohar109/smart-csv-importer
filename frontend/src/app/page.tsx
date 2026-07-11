@@ -5,6 +5,7 @@ import UploadStep from "@/components/UploadStep";
 import DataTable from "@/components/DataTable";
 import ResultsView from "@/components/ResultsView";
 import Spinner from "@/components/Spinner";
+import ThemeToggle from "@/components/ThemeToggle";
 import { apiClient, extractErrorMessage } from "@/lib/api";
 import type { CsvRow, ExtractResponse } from "@/types/crm";
 
@@ -50,11 +51,14 @@ export default function Home() {
 
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-6 py-10">
-      <header>
-        <h1 className="text-2xl font-semibold">Smart CSV Importer</h1>
-        <p className="text-sm text-black/60 dark:text-white/60">
-          AI-powered CRM lead extraction from any CSV format
-        </p>
+      <header className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold">Smart CSV Importer</h1>
+          <p className="text-sm text-black/60 dark:text-white/60">
+            AI-powered CRM lead extraction from any CSV format
+          </p>
+        </div>
+        <ThemeToggle />
       </header>
 
       <nav className="flex gap-4 text-sm">
