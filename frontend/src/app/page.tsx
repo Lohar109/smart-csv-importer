@@ -63,6 +63,9 @@ export default function Home() {
         const response = await apiClient.post<ExtractResponse>("/api/extract", { rows });
         data = response.data;
       }
+      if (!Array.isArray(data.imported)) {
+        throw new Error("Extraction response was missing the imported records list.");
+      }
       setResult(data);
       setReviewRecords(data.imported);
       setStep("review");

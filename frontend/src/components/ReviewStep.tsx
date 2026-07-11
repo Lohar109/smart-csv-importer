@@ -74,7 +74,7 @@ export default function ReviewStep({ records, onFieldChange, onConfirm }: Review
                       className="max-w-[220px] border-b border-slate-100 px-4 py-2.5 text-slate-700 dark:border-white/5 dark:text-slate-300"
                     >
                       <EditableCell
-                        value={record[col] as string}
+                        value={record[col] != null ? String(record[col]) : ""}
                         confidence={record.field_confidence?.[col] ?? "high"}
                         onCommit={(value) => onFieldChange(idx, col, value)}
                         options={
