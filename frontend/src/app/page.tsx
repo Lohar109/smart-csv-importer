@@ -7,10 +7,12 @@ import DataTable from "@/components/DataTable";
 import ResultsView from "@/components/ResultsView";
 import ReviewStep from "@/components/ReviewStep";
 import ProcessingScreen from "@/components/ProcessingScreen";
+import LiveProgressScreen from "@/components/LiveProgressScreen";
 import Stepper from "@/components/Stepper";
 import Alert from "@/components/Alert";
 import Card from "@/components/Card";
 import { apiClient, extractErrorMessage } from "@/lib/api";
+import { streamExtraction, type BatchProgress } from "@/lib/sseExtract";
 import type { CrmFieldKey, CrmRecord, CsvRow, ExtractResponse } from "@/types/crm";
 
 type WizardStep = "upload" | "preview" | "review" | "results";
@@ -30,6 +32,8 @@ export default function Home() {
   const [result, setResult] = useState<ExtractResponse | null>(null);
   const [reviewRecords, setReviewRecords] = useState<CrmRecord[]>([]);
   const [isImporting, setIsImporting] = useState(false);
+  const [useLiveProgress, setUseLiveProgress] = useState(true);
+  const [batchProgress, setBatchProgress] = useState<BatchProgress | null>(null);
   const [error, setError] = useState("");
 
   function reset() {
@@ -39,14 +43,26 @@ export default function Home() {
     setRows([]);
     setResult(null);
     setReviewRecords([]);
+    setBatchProgress(null);
     setError("");
   }
 
   async function handleConfirmImport() {
     setError("");
     setIsImporting(true);
+    setUseLiveProgress(true);
+    setBatchProgress(null);
     try {
-      const { data } = await apiClient.post<ExtractResponse>("/api/extract", { rows });
+      let data: ExtractResponse;
+      try {
+        data = await streamExtraction({ rows, onProgress: setBatchProgress });
+      } catch {
+        // SSE unsupported or failed mid-stream: fall back to the plain JSON endpoint.
+        setUseLiveProgress(false);
+        setBatchProgress(null);
+        const response = await apiClient.post<ExtractResponse>("/api/extract", { rows });
+        data = response.data;
+      }
       setResult(data);
       setReviewRecords(data.imported);
       setStep("review");
@@ -101,7 +117,11 @@ export default function Home() {
 
       {step === "preview" && isImporting && (
         <div key="processing" className="animate-step-in">
-          <ProcessingScreen />
+          {useLiveProgress ? (
+            <LiveProgressScreen progress={batchProgress} totalRows={rows.length} />
+          ) : (
+            <ProcessingScreen />
+          )}
         </div>
       )}
 
