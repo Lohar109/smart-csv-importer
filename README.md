@@ -12,9 +12,9 @@ An AI-powered CSV importer that intelligently extracts CRM lead information from
 
 1. **Upload** — drag & drop or pick a `.csv` file.
 2. **Preview** — the file is parsed entirely client-side (PapaParse) into a scrollable, sticky-header table. No API calls happen yet.
-3. **Confirm Import** — only on confirmation are the parsed rows sent to the backend.
-4. **AI Extraction** — the backend splits rows into batches of 20 and sends each batch to Gemini with a prompt that maps arbitrary columns onto a fixed CRM schema, following strict business rules (see below).
-5. **Results** — imported records and skipped records (with reasons) are shown, along with total counts.
+3. **Confirm Import** — only on confirmation are the parsed rows sent to the backend, which splits them into batches of 20 and sends each batch to Gemini with a prompt that maps arbitrary columns onto a fixed CRM schema, following strict business rules (see below). Progress streams live via SSE.
+4. **Review** — AI-extracted records land in an editable table before anything is finalized. Fields the AI wasn't confident about are highlighted for a quick human check.
+5. **Results** — imported records, skipped records (with reasons), and any detected duplicates are shown, along with total counts and export options.
 
 ## CRM field schema
 
@@ -34,6 +34,22 @@ Key extraction rules enforced in the AI prompt:
 - Extra emails/phone numbers beyond the first are appended to `crm_note`.
 - A row is skipped (not imported) if it has neither an email nor a mobile number; skipped rows are returned separately with a reason.
 
+## Advanced features
+
+These go beyond the base assignment spec:
+
+### 1. AI confidence scoring + manual review step
+
+Every imported record includes a `field_confidence` object (`"high" | "medium" | "low"` per CRM field), reflecting how clearly the AI could map a source column to that field — a column literally named `email` scores `high`; a free-text `notes` column that happens to contain a name scores `medium`/`low`. The frontend inserts a **Review** step between Preview and Results: low/medium-confidence cells are highlighted (amber border for low, yellow tint for medium) and inline-editable — a text input for most fields, a dropdown for `crm_status`/`data_source` to keep values valid. High-confidence fields stay plain text with a hover-only edit affordance. A legend badge shows how many fields need review, and edits are tracked locally until **Confirm & Import** finalizes the batch.
+
+### 2. Duplicate lead detection
+
+After AI extraction, records are checked for duplicates within the same upload — matching on a case-insensitive email or a normalized mobile number (spaces/dashes stripped, leading country-code digits dropped). Duplicates are **not** dropped or merged: the first occurrence stays untouched, later matches are tagged `is_duplicate: true` with a `duplicate_of` pointer back to the first occurrence's index, and the response includes a `duplicateCount`. The Results screen shows a "Duplicates Found" stat card (only when count > 0) and a "Duplicate of #N" badge on affected rows, leaving the merge decision to the user.
+
+### 3. Real-time streaming batch progress
+
+`POST /api/extract/stream` runs the same batched extraction pipeline but streams progress over Server-Sent Events — a `batch_complete` event as each batch finishes (in completion order) and a final `done` event with the full result. The frontend reads this via `fetch` + `ReadableStream` (not `EventSource`, which can't send a POST body) and drives a live "Processing batch N of M…" progress bar. If streaming fails or isn't supported, it falls back transparently to the plain `POST /api/extract` JSON endpoint and the original indeterminate spinner — the import flow never breaks.
+
 ## Tech stack
 
 | Layer    | Stack |
@@ -51,17 +67,19 @@ smart-csv-importer/
 │   ├── src/
 │   │   ├── app.js                 # Express app wiring
 │   │   ├── server.js              # Entry point
-│   │   ├── routes/                # upload, extract, health routes
-│   │   ├── services/              # CSV parsing, prompt building, extraction orchestration
+│   │   ├── routes/                # upload, extract (+ /stream SSE variant), health routes
+│   │   ├── services/              # CSV parsing, prompt building, extraction orchestration,
+│   │   │   │                      # duplicate detection (dedupe.service.js)
 │   │   │   └── llm/               # LLM provider abstraction (Gemini implementation)
 │   │   ├── middleware/            # multer upload middleware, centralized error handler
 │   │   └── utils/                 # CRM schema constants
 │   └── .env.example
 ├── frontend/
 │   ├── src/
-│   │   ├── app/                   # page.tsx (wizard), layout.tsx, globals.css
-│   │   ├── components/            # UploadStep, DataTable, ResultsView, Spinner, ThemeToggle
-│   │   ├── lib/                   # axios client
+│   │   ├── app/                   # page.tsx (4-step wizard), layout.tsx, globals.css
+│   │   ├── components/            # UploadStep, DataTable, ReviewStep, EditableCell,
+│   │   │                          # ResultsView, LiveProgressScreen, ThemeToggle, ...
+│   │   ├── lib/                   # axios client, SSE streaming client (sseExtract.ts)
 │   │   └── types/                 # CRM schema types
 │   └── .env.example
 ├── docker-compose.yml             # optional local orchestration
@@ -137,14 +155,37 @@ Returns:
 
 ```json
 {
-  "imported": [ { "created_at": "...", "name": "John Doe", "email": "john@example.com", "...": "..." } ],
+  "imported": [
+    {
+      "created_at": "...", "name": "John Doe", "email": "john@example.com", "...": "...",
+      "field_confidence": { "name": "high", "email": "high", "...": "high" },
+      "is_duplicate": false,
+      "duplicate_of": null
+    }
+  ],
   "skipped": [ { "row": { "...": "..." }, "reason": "No email or mobile number provided." } ],
   "totalImported": 1,
-  "totalSkipped": 0
+  "totalSkipped": 0,
+  "duplicateCount": 0
 }
 ```
 
-Rows are split into batches of 20, sent to Gemini in parallel, and retried up to 2 additional times on failure. If a batch still fails after retries, its rows are marked as skipped with the underlying error as the reason rather than failing the whole import.
+Rows are split into batches of 20, sent to Gemini in parallel, and retried up to 2 additional times on failure. If a batch still fails after retries, its rows are marked as skipped with the underlying error as the reason rather than failing the whole import. After extraction, records are deduplicated by email/mobile within the batch (see Advanced features above).
+
+### `POST /api/extract/stream`
+
+Same request shape and extraction pipeline as `POST /api/extract`, but the response is `text/event-stream` instead of JSON. Emits one `batch_complete` event per finished batch, then a final `done` event carrying the full result shape shown above:
+
+```
+data: {"type":"batch_complete","batchIndex":1,"totalBatches":3,"recordsProcessedSoFar":20}
+
+data: {"type":"batch_complete","batchIndex":2,"totalBatches":3,"recordsProcessedSoFar":40}
+
+data: {"type":"done","imported":[...],"skipped":[...],"totalImported":55,"totalSkipped":5,"duplicateCount":2}
+
+```
+
+Intended to be consumed with `fetch` + a `ReadableStream` reader (not `EventSource`, since this is a POST with a body).
 
 ## Deployment
 
