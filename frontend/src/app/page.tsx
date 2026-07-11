@@ -1,12 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import { ArrowRight, FileText, RotateCcw } from "lucide-react";
 import UploadStep from "@/components/UploadStep";
 import DataTable from "@/components/DataTable";
 import ResultsView from "@/components/ResultsView";
-import Spinner from "@/components/Spinner";
+import ProcessingScreen from "@/components/ProcessingScreen";
 import Stepper from "@/components/Stepper";
 import Alert from "@/components/Alert";
+import Card from "@/components/Card";
 import { apiClient, extractErrorMessage } from "@/lib/api";
 import type { CsvRow, ExtractResponse } from "@/types/crm";
 
@@ -80,35 +82,46 @@ export default function Home() {
         </div>
       )}
 
-      {step === "preview" && (
-        <div key="preview" className="flex animate-step-in flex-col gap-4">
-          <div className="flex items-center justify-between">
-            <p className="text-sm text-black/60 dark:text-white/60">
-              <span className="font-medium text-black dark:text-white">{fileName}</span> —{" "}
-              {rows.length} rows detected
-            </p>
-            <button
-              type="button"
-              onClick={reset}
-              className="text-sm text-black/50 underline hover:text-black dark:text-white/50 dark:hover:text-white"
-            >
-              Choose a different file
-            </button>
-          </div>
+      {step === "preview" && isImporting && (
+        <div key="processing" className="animate-step-in">
+          <ProcessingScreen />
+        </div>
+      )}
 
-          <DataTable columns={headers} rows={rows} />
+      {step === "preview" && !isImporting && (
+        <div key="preview" className="flex animate-step-in flex-col gap-5">
+          <Card>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5">
+                <FileText className="h-4.5 w-4.5 shrink-0 text-indigo-500 dark:text-indigo-400" />
+                <span className="font-medium text-slate-900 dark:text-white">{fileName}</span>
+                <span className="rounded-full bg-indigo-100 px-2.5 py-0.5 text-xs font-semibold text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-300">
+                  {rows.length} rows
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={reset}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-600 transition-colors hover:border-slate-300 hover:bg-slate-50 dark:border-white/15 dark:text-slate-300 dark:hover:bg-white/5"
+              >
+                <RotateCcw className="h-3.5 w-3.5" />
+                Choose a different file
+              </button>
+            </div>
 
-          <div className="flex items-center gap-4">
-            <button
-              type="button"
-              onClick={handleConfirmImport}
-              disabled={isImporting}
-              className="rounded-full bg-blue-600 px-6 py-2.5 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {isImporting ? "Importing…" : "Confirm Import"}
-            </button>
-            {isImporting && <Spinner label="Running AI extraction on your rows…" />}
-          </div>
+            <div className="mt-4">
+              <DataTable columns={headers} rows={rows} />
+            </div>
+          </Card>
+
+          <button
+            type="button"
+            onClick={handleConfirmImport}
+            className="group flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 px-6 py-3.5 text-sm font-semibold text-white shadow-md shadow-indigo-500/25 transition-all hover:shadow-lg hover:shadow-indigo-500/30 active:scale-[0.99]"
+          >
+            Confirm Import
+            <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+          </button>
         </div>
       )}
 
